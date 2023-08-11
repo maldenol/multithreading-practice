@@ -1,3 +1,7 @@
+mod producer_consumer_problem;
+
+use producer_consumer_problem::producer_consumer_problem;
+
 fn main() {
-    println!("Hello, world!");
+    //producer_consumer_problem();
 }
