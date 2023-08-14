@@ -102,9 +102,9 @@ fn reader(
             }
         }
 
-        thread::sleep(Duration::from_millis(sync_rand_range(0, 200))); // okay (1)
-                                                                       //thread::sleep(Duration::from_millis(sync_rand_range(1, 200))); // okay (2)
-                                                                       //thread::sleep(Duration::from_millis(sync_rand_range(0, 200))); // okay (3)
+        //thread::sleep(Duration::from_millis(0)); // okay (1)
+        //thread::sleep(Duration::from_millis(200)); // okay (2)
+        thread::sleep(Duration::from_millis(0)); // okay (3)
     }
 }
 
@@ -127,8 +127,8 @@ fn writer(
 
         readers_writer_mtx.release();
 
-        thread::sleep(Duration::from_millis(sync_rand_range(0, 200))); // okay (1)
-                                                                       //thread::sleep(Duration::from_millis(sync_rand_range(0, 200))); // okay (2)
-                                                                       //thread::sleep(Duration::from_millis(sync_rand_range(1, 200))); // okay (3)
+        //thread::sleep(Duration::from_millis(200)); // okay (1)
+        //thread::sleep(Duration::from_millis(0)); // okay (2)
+        thread::sleep(Duration::from_millis(0)); // okay (3)
     }
 }

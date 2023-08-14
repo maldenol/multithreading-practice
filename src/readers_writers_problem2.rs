@@ -114,8 +114,8 @@ fn reader(
             }
         }
 
-        //thread::sleep(Duration::from_millis(sync_rand_range(1, 200))); // okay
-        thread::sleep(Duration::from_millis(sync_rand_range(0, 200))); // readers starvation
+        //thread::sleep(Duration::from_millis(sync_rand_range(0, 200))); // okay
+        thread::sleep(Duration::from_millis(0)); // readers starvation
     }
 }
 
@@ -158,7 +158,7 @@ fn writer(
             }
         }
 
-        //thread::sleep(Duration::from_millis(sync_rand_range(1, 200))); // okay
-        thread::sleep(Duration::from_millis(sync_rand_range(0, 200))); // readers starvation
+        //thread::sleep(Duration::from_millis(sync_rand_range(0, 200))); // okay
+        thread::sleep(Duration::from_millis(0)); // readers starvation
     }
 }

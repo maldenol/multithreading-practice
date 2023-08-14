@@ -90,8 +90,8 @@ fn reader(
             }
         }
 
-        //thread::sleep(Duration::from_millis(sync_rand_range(1, 200))); // okay
-        thread::sleep(Duration::from_millis(sync_rand_range(0, 200))); // writers starvation
+        //thread::sleep(Duration::from_millis(sync_rand_range(0, 200))); // okay
+        thread::sleep(Duration::from_millis(0)); // writers starvation
     }
 }
 
@@ -106,7 +106,7 @@ fn writer(mut resource: Box<i32>, readers_writer_mtx: Arc<Semaphore>, is_running
 
         readers_writer_mtx.release();
 
-        //thread::sleep(Duration::from_millis(sync_rand_range(1, 200))); // okay
-        thread::sleep(Duration::from_millis(sync_rand_range(0, 200))); // writers starvation
+        //thread::sleep(Duration::from_millis(sync_rand_range(0, 200))); // okay
+        thread::sleep(Duration::from_millis(0)); // writers starvation
     }
 }

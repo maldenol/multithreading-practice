@@ -28,9 +28,15 @@ pub fn sync_rand() -> u64 {
 }
 
 pub fn sync_rand_range(min: u64, max: u64) -> u64 {
-    map(sync_rand(), 0, u64::MAX, min, max)
+    map(sync_rand(), 0, i32::MAX as u64, min, max)
 }
 
 fn map(val: u64, in_min: u64, in_max: u64, out_min: u64, out_max: u64) -> u64 {
-    out_min + ((val - in_min) / (in_max - in_min)) * (out_max - out_min)
+    let val = val as f64;
+    let in_min = in_min as f64;
+    let in_max = in_max as f64;
+    let out_min = out_min as f64;
+    let out_max = out_max as f64;
+
+    (out_min + (((val - in_min) / (in_max - in_min)) * (out_max - out_min))) as u64
 }
