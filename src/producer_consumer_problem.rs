@@ -4,11 +4,14 @@ mod semaphore;
 use semaphore::Semaphore;
 use std::collections::VecDeque;
 use std::sync::{
-    atomic::{AtomicBool, Ordering},
+    atomic::{AtomicBool, AtomicU32, Ordering},
     Arc, Mutex,
 };
 use std::thread;
 use std::time::Duration;
+
+static mut PRODUCED: AtomicU32 = AtomicU32::new(0);
+static mut CONSUMED: AtomicU32 = AtomicU32::new(0);
 
 pub fn producer_consumer_problem() {
     const MAX_QUEUE_LENGTH: usize = 10;
@@ -53,6 +56,13 @@ pub fn producer_consumer_problem() {
     for cons in consumers {
         let _ = cons.join();
     }
+
+    println!("Produced {} items", unsafe {
+        PRODUCED.load(Ordering::Relaxed)
+    });
+    println!("Consumed {} items", unsafe {
+        CONSUMED.load(Ordering::Relaxed)
+    });
 }
 
 #[derive(Debug)]
@@ -71,11 +81,7 @@ fn producer(
     while is_running.load(Ordering::Relaxed) {
         let item = produce_item();
 
-        while !empty_number.acquire_timeout(Duration::from_millis(50)) {
-            if !is_running.load(Ordering::Relaxed) {
-                return;
-            }
-        }
+        empty_number.acquire();
         {
             let mut item_queue = item_queue.lock().unwrap();
             item_queue.push_back(item);
@@ -115,9 +121,11 @@ fn produce_item() -> Item {
     }
     let item = unsafe { Item(INDEX) };
     println!("Produced {:?}", item);
+    unsafe { PRODUCED.store(PRODUCED.load(Ordering::Relaxed) + 1, Ordering::Relaxed) };
     item
 }
 
 fn consume_item(item: Item) {
     println!("Consumed {:?}", item);
+    unsafe { CONSUMED.store(CONSUMED.load(Ordering::Relaxed) + 1, Ordering::Relaxed) };
 }
