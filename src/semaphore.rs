@@ -25,7 +25,7 @@ impl Semaphore {
     pub fn acquire_timeout(&self, dur: Duration) -> bool {
         let mut count = self.lock.lock().unwrap();
         match self.cvar.wait_timeout(count, dur) {
-            Ok((new_count, timeout)) if !timeout.timed_out() => {
+            Ok((new_count, _)) => {
                 count = new_count;
                 if *count > 0 {
                     *count -= 1;
