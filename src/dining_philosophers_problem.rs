@@ -1,16 +1,10 @@
-#[path = "./semaphore.rs"]
-mod semaphore;
-#[path = "./sync_rand.rs"]
-mod sync_rand;
-
-use semaphore::Semaphore;
+use crate::{semaphore::Semaphore, sync_rand::sync_rand_range};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Mutex,
 };
 use std::thread;
 use std::time::Duration;
-use sync_rand::sync_rand_range;
 
 #[derive(PartialEq)]
 enum PhilosopherState {
@@ -23,7 +17,7 @@ pub fn dining_philosophers_problem() {
     const PHILOSOPHER_NUMBER: usize = 5;
 
     let states = Arc::new(Mutex::new(Vec::with_capacity(PHILOSOPHER_NUMBER)));
-    let mut both_forks_available = Box::new(Vec::with_capacity(PHILOSOPHER_NUMBER));
+    let mut both_forks_available = Vec::with_capacity(PHILOSOPHER_NUMBER);
     let is_running = Arc::new(AtomicBool::new(true));
 
     for index in 0..PHILOSOPHER_NUMBER {
@@ -31,13 +25,13 @@ pub fn dining_philosophers_problem() {
         both_forks_available.push(Semaphore::new(0));
     }
 
-    let mut philosophers = Vec::new();
+    let mut philosophers = Vec::with_capacity(PHILOSOPHER_NUMBER);
     for index in 0..PHILOSOPHER_NUMBER {
         philosophers.push(thread::spawn({
-            let states = states.clone();
+            let states = Arc::clone(&states);
             let both_forks_available =
-                unsafe { Box::from_raw(&mut *both_forks_available as *mut Vec<Semaphore>) };
-            let is_running = is_running.clone();
+                unsafe { Box::from_raw(both_forks_available.as_mut() as *mut Vec<Semaphore>) };
+            let is_running = Arc::clone(&is_running);
             move || {
                 philosopher(
                     index,
@@ -66,23 +60,14 @@ fn philosopher(
     mut both_forks_available: Box<Vec<Semaphore>>,
     is_running: Arc<AtomicBool>,
 ) {
+    let states = states.as_ref();
     let mut both_forks_available = Box::leak(both_forks_available);
 
     while is_running.load(Ordering::Relaxed) {
         think(index);
-        take_forks(
-            index,
-            total_number,
-            states.clone(),
-            &mut both_forks_available,
-        );
+        take_forks(index, total_number, states, both_forks_available);
         eat(index);
-        put_forks(
-            index,
-            total_number,
-            states.clone(),
-            &mut both_forks_available,
-        );
+        put_forks(index, total_number, states, both_forks_available);
     }
 }
 
@@ -105,7 +90,7 @@ fn eat(index: usize) {
 fn take_forks(
     index: usize,
     total_number: usize,
-    states: Arc<Mutex<Vec<PhilosopherState>>>,
+    states: &Mutex<Vec<PhilosopherState>>,
     both_forks_available: &mut Vec<Semaphore>,
 ) {
     {
@@ -120,7 +105,7 @@ fn take_forks(
 fn put_forks(
     index: usize,
     total_number: usize,
-    states: Arc<Mutex<Vec<PhilosopherState>>>,
+    states: &Mutex<Vec<PhilosopherState>>,
     both_forks_available: &mut Vec<Semaphore>,
 ) {
     let mut states = states.lock().unwrap();

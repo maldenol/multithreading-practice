@@ -1,7 +1,4 @@
-#[path = "./semaphore.rs"]
-mod semaphore;
-
-use semaphore::Semaphore;
+use crate::semaphore::Semaphore;
 use std::collections::VecDeque;
 use std::sync::{
     atomic::{AtomicBool, AtomicU32, Ordering},
@@ -15,32 +12,32 @@ static mut CONSUMED: AtomicU32 = AtomicU32::new(0);
 
 pub fn producer_consumer_problem() {
     const MAX_QUEUE_LENGTH: usize = 10;
-    const PRODUCER_NUMBER: u32 = 1000;
-    const CONSUMER_NUMBER: u32 = 1000;
+    const PRODUCER_NUMBER: usize = 1000;
+    const CONSUMER_NUMBER: usize = 1000;
 
-    let item_queue = Arc::new(Mutex::new(VecDeque::new()));
+    let item_queue = Arc::new(Mutex::new(VecDeque::with_capacity(MAX_QUEUE_LENGTH)));
     let queue_length = Arc::new(Semaphore::new(0));
     let empty_number = Arc::new(Semaphore::new(MAX_QUEUE_LENGTH));
     let is_running = Arc::new(AtomicBool::new(true));
 
-    let mut producers = Vec::new();
+    let mut producers = Vec::with_capacity(PRODUCER_NUMBER);
     for _ in 0..PRODUCER_NUMBER {
         producers.push(thread::spawn({
-            let item_queue = item_queue.clone();
-            let queue_length = queue_length.clone();
-            let empty_number = empty_number.clone();
-            let is_running = is_running.clone();
+            let item_queue = Arc::clone(&item_queue);
+            let queue_length = Arc::clone(&queue_length);
+            let empty_number = Arc::clone(&empty_number);
+            let is_running = Arc::clone(&is_running);
             move || producer(item_queue, queue_length, empty_number, is_running)
         }));
     }
 
-    let mut consumers = Vec::new();
+    let mut consumers = Vec::with_capacity(CONSUMER_NUMBER);
     for _ in 0..CONSUMER_NUMBER {
         consumers.push(thread::spawn({
-            let item_queue = item_queue.clone();
-            let queue_length = queue_length.clone();
-            let empty_number = empty_number.clone();
-            let is_running = is_running.clone();
+            let item_queue = Arc::clone(&item_queue);
+            let queue_length = Arc::clone(&queue_length);
+            let empty_number = Arc::clone(&empty_number);
+            let is_running = Arc::clone(&is_running);
             move || consumer(item_queue, queue_length, empty_number, is_running)
         }));
     }

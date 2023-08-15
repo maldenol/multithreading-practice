@@ -6,6 +6,8 @@ mod readers_writers_problem0;
 mod readers_writers_problem1;
 mod readers_writers_problem2;
 mod readers_writers_problem3;
+mod semaphore;
+mod sync_rand;
 
 use dining_philosophers_problem::dining_philosophers_problem;
 use producer_consumer_problem::producer_consumer_problem;

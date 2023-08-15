@@ -1,21 +1,15 @@
-#[path = "./semaphore.rs"]
-mod semaphore;
-#[path = "./sync_rand.rs"]
-mod sync_rand;
-
-use semaphore::Semaphore;
+use crate::{semaphore::Semaphore, sync_rand::sync_rand_range};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Mutex,
 };
 use std::thread;
 use std::time::Duration;
-use sync_rand::sync_rand_range;
 
 // Readers would starve (writers-preference)
 pub fn readers_writers_problem2() {
-    const READER_NUMBER: u32 = 10;
-    const WRITER_NUMBER: u32 = 10;
+    const READER_NUMBER: usize = 10;
+    const WRITER_NUMBER: usize = 10;
 
     let mut resource = Box::new(0);
     let readers_writer_mtx = Arc::new(Semaphore::new(1));
@@ -24,14 +18,14 @@ pub fn readers_writers_problem2() {
     let writer_count = Arc::new(Mutex::new(0));
     let is_running = Arc::new(AtomicBool::new(true));
 
-    let mut readers = Vec::new();
+    let mut readers = Vec::with_capacity(READER_NUMBER);
     for _ in 0..READER_NUMBER {
         readers.push(thread::spawn({
             let resource = unsafe { Box::from_raw(resource.as_mut() as *mut i32) };
-            let readers_writer_mtx = readers_writer_mtx.clone();
-            let try_read_mtx = try_read_mtx.clone();
-            let reader_count = reader_count.clone();
-            let is_running = is_running.clone();
+            let readers_writer_mtx = Arc::clone(&readers_writer_mtx);
+            let try_read_mtx = Arc::clone(&try_read_mtx);
+            let reader_count = Arc::clone(&reader_count);
+            let is_running = Arc::clone(&is_running);
             || {
                 reader(
                     resource,
@@ -44,14 +38,14 @@ pub fn readers_writers_problem2() {
         }));
     }
 
-    let mut writers = Vec::new();
+    let mut writers = Vec::with_capacity(WRITER_NUMBER);
     for _ in 0..READER_NUMBER {
         writers.push(thread::spawn({
             let resource = unsafe { Box::from_raw(resource.as_mut() as *mut i32) };
-            let readers_writer_mtx = readers_writer_mtx.clone();
-            let try_read_mtx = try_read_mtx.clone();
-            let writer_count = writer_count.clone();
-            let is_running = is_running.clone();
+            let readers_writer_mtx = Arc::clone(&readers_writer_mtx);
+            let try_read_mtx = Arc::clone(&try_read_mtx);
+            let writer_count = Arc::clone(&writer_count);
+            let is_running = Arc::clone(&is_running);
             || {
                 writer(
                     resource,

@@ -1,20 +1,14 @@
-#[path = "./semaphore.rs"]
-mod semaphore;
-#[path = "./sync_rand.rs"]
-mod sync_rand;
-
-use semaphore::Semaphore;
+use crate::{semaphore::Semaphore, sync_rand::sync_rand_range};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Mutex,
 };
 use std::thread;
 use std::time::Duration;
-use sync_rand::sync_rand_range;
 
 pub fn readers_writers_problem3() {
-    const READER_NUMBER: u32 = 10;
-    const WRITER_NUMBER: u32 = 10;
+    const READER_NUMBER: usize = 10;
+    const WRITER_NUMBER: usize = 10;
 
     let mut resource = Box::new(0);
     let service_queue_mtx = Arc::new(Mutex::new(()));
@@ -22,14 +16,14 @@ pub fn readers_writers_problem3() {
     let reader_count = Arc::new(Mutex::new(0));
     let is_running = Arc::new(AtomicBool::new(true));
 
-    let mut readers = Vec::new();
+    let mut readers = Vec::with_capacity(READER_NUMBER);
     for _ in 0..READER_NUMBER {
         readers.push(thread::spawn({
             let resource = unsafe { Box::from_raw(resource.as_mut() as *mut i32) };
-            let service_queue_mtx = service_queue_mtx.clone();
-            let readers_writer_mtx = readers_writer_mtx.clone();
-            let reader_count = reader_count.clone();
-            let is_running = is_running.clone();
+            let service_queue_mtx = Arc::clone(&service_queue_mtx);
+            let readers_writer_mtx = Arc::clone(&readers_writer_mtx);
+            let reader_count = Arc::clone(&reader_count);
+            let is_running = Arc::clone(&is_running);
             || {
                 reader(
                     resource,
@@ -42,13 +36,13 @@ pub fn readers_writers_problem3() {
         }));
     }
 
-    let mut writers = Vec::new();
+    let mut writers = Vec::with_capacity(WRITER_NUMBER);
     for _ in 0..READER_NUMBER {
         writers.push(thread::spawn({
             let resource = unsafe { Box::from_raw(resource.as_mut() as *mut i32) };
-            let service_queue_mtx = service_queue_mtx.clone();
-            let readers_writer_mtx = readers_writer_mtx.clone();
-            let is_running = is_running.clone();
+            let service_queue_mtx = Arc::clone(&service_queue_mtx);
+            let readers_writer_mtx = Arc::clone(&readers_writer_mtx);
+            let is_running = Arc::clone(&is_running);
             || writer(resource, service_queue_mtx, readers_writer_mtx, is_running)
         }));
     }

@@ -44,6 +44,6 @@ impl Semaphore {
     }
 
     pub fn get_value(&self) -> usize {
-        self.lock.lock().unwrap().clone()
+        *self.lock.lock().unwrap()
     }
 }

@@ -1,36 +1,33 @@
-#[path = "./sync_rand.rs"]
-mod sync_rand;
-
+use crate::sync_rand::sync_rand_range;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Mutex,
 };
 use std::thread;
 use std::time::Duration;
-use sync_rand::sync_rand_range;
 
 // Readers will wait for another reader to finish reading which is unnecessary
 pub fn readers_writers_problem0() {
-    const READER_NUMBER: u32 = 10;
-    const WRITER_NUMBER: u32 = 10;
+    const READER_NUMBER: usize = 10;
+    const WRITER_NUMBER: usize = 10;
 
     let resource = Arc::new(Mutex::new(0));
     let is_running = Arc::new(AtomicBool::new(true));
 
-    let mut readers = Vec::new();
+    let mut readers = Vec::with_capacity(READER_NUMBER);
     for _ in 0..READER_NUMBER {
         readers.push(thread::spawn({
-            let resource = resource.clone();
-            let is_running = is_running.clone();
+            let resource = Arc::clone(&resource);
+            let is_running = Arc::clone(&is_running);
             || reader(resource, is_running)
         }));
     }
 
-    let mut writers = Vec::new();
+    let mut writers = Vec::with_capacity(WRITER_NUMBER);
     for _ in 0..READER_NUMBER {
         writers.push(thread::spawn({
-            let resource = resource.clone();
-            let is_running = is_running.clone();
+            let resource = Arc::clone(&resource);
+            let is_running = Arc::clone(&is_running);
             || writer(resource, is_running)
         }));
     }
