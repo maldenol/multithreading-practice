@@ -18,6 +18,7 @@ pub fn readers_writers_problem2() {
     let writer_count = Arc::new(Mutex::new(0));
     let is_running = Arc::new(AtomicBool::new(true));
 
+    println!("Spawning readers");
     let mut readers = Vec::with_capacity(READER_NUMBER);
     for _ in 0..READER_NUMBER {
         readers.push(thread::spawn({
@@ -26,7 +27,7 @@ pub fn readers_writers_problem2() {
             let try_read_mtx = Arc::clone(&try_read_mtx);
             let reader_count = Arc::clone(&reader_count);
             let is_running = Arc::clone(&is_running);
-            || {
+            move || {
                 reader(
                     resource,
                     readers_writer_mtx,
@@ -37,7 +38,7 @@ pub fn readers_writers_problem2() {
             }
         }));
     }
-
+    println!("Spawning writers");
     let mut writers = Vec::with_capacity(WRITER_NUMBER);
     for _ in 0..READER_NUMBER {
         writers.push(thread::spawn({
@@ -46,7 +47,7 @@ pub fn readers_writers_problem2() {
             let try_read_mtx = Arc::clone(&try_read_mtx);
             let writer_count = Arc::clone(&writer_count);
             let is_running = Arc::clone(&is_running);
-            || {
+            move || {
                 writer(
                     resource,
                     readers_writer_mtx,
@@ -59,13 +60,14 @@ pub fn readers_writers_problem2() {
     }
 
     thread::sleep(Duration::from_millis(3000));
-
+    println!("Finishing threads");
     is_running.store(false, Ordering::Relaxed);
 
+    println!("Joining readers");
     for read in readers {
         let _ = read.join();
     }
-
+    println!("Joining writers");
     for writ in writers {
         let _ = writ.join();
     }

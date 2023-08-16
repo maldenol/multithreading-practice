@@ -20,6 +20,7 @@ pub fn producer_consumer_problem() {
     let empty_number = Arc::new(Semaphore::new(MAX_QUEUE_LENGTH));
     let is_running = Arc::new(AtomicBool::new(true));
 
+    println!("Spawning producers");
     let mut producers = Vec::with_capacity(PRODUCER_NUMBER);
     for _ in 0..PRODUCER_NUMBER {
         producers.push(thread::spawn({
@@ -30,7 +31,7 @@ pub fn producer_consumer_problem() {
             move || producer(item_queue, queue_length, empty_number, is_running)
         }));
     }
-
+    println!("Spawning consumers");
     let mut consumers = Vec::with_capacity(CONSUMER_NUMBER);
     for _ in 0..CONSUMER_NUMBER {
         consumers.push(thread::spawn({
@@ -42,14 +43,15 @@ pub fn producer_consumer_problem() {
         }));
     }
 
-    thread::sleep(Duration::from_secs(1));
-
+    thread::sleep(Duration::from_millis(1000));
+    println!("Finishing threads");
     is_running.store(false, Ordering::Relaxed);
 
+    println!("Joining producers");
     for prod in producers {
         let _ = prod.join();
     }
-
+    println!("Joining consumers");
     for cons in consumers {
         let _ = cons.join();
     }
@@ -96,7 +98,7 @@ fn consumer(
     while is_running.load(Ordering::Relaxed) || queue_length.get_value() > 0 {
         let item;
 
-        while !queue_length.acquire_timeout(Duration::from_millis(50)) {
+        while !queue_length.acquire_timeout(Duration::from_millis(1000)) {
             if !is_running.load(Ordering::Relaxed) && queue_length.get_value() == 0 {
                 return;
             }

@@ -12,35 +12,31 @@ pub fn sleeping_barber_problem() {
     const CHAIR_NUMBER: usize = 3;
 
     let customer_ready = Arc::new(Semaphore::new(0));
-    let waiting_room = Arc::new(Mutex::new((
-        CHAIR_NUMBER,
-        VecDeque::with_capacity(CHAIR_NUMBER),
-    )));
+    let customer_queue = Arc::new(Mutex::new(VecDeque::with_capacity(CHAIR_NUMBER)));
     let barber_ready = Arc::new(Semaphore::new(0));
     let is_running = Arc::new(AtomicBool::new(true));
 
     println!("Spawning a barber");
     let barber = thread::spawn({
         let customer_ready = Arc::clone(&customer_ready);
-        let waiting_room = Arc::clone(&waiting_room);
+        let customer_queue = Arc::clone(&customer_queue);
         let barber_ready = Arc::clone(&barber_ready);
         let is_running = Arc::clone(&is_running);
-        move || barber(customer_ready, waiting_room, barber_ready, is_running)
+        move || barber(customer_ready, customer_queue, barber_ready, is_running)
     });
-
     println!("Spawning customers");
     let mut customers = Vec::with_capacity(CUSTOMER_NUMBER);
     for index in 0..CUSTOMER_NUMBER {
         customers.push(thread::spawn({
             let customer_ready = Arc::clone(&customer_ready);
-            let waiting_room = Arc::clone(&waiting_room);
+            let customer_queue = Arc::clone(&customer_queue);
             let barber_ready = Arc::clone(&barber_ready);
             let is_running = Arc::clone(&is_running);
             move || {
                 customer(
                     index,
                     customer_ready,
-                    waiting_room,
+                    customer_queue,
                     barber_ready,
                     is_running,
                 )
@@ -48,7 +44,7 @@ pub fn sleeping_barber_problem() {
         }));
     }
 
-    thread::sleep(Duration::from_secs(3));
+    thread::sleep(Duration::from_millis(3000));
     println!("Finishing threads");
     is_running.store(false, Ordering::Relaxed);
 
@@ -63,7 +59,7 @@ pub fn sleeping_barber_problem() {
 fn customer(
     index: usize,
     customer_ready: Arc<Semaphore>,
-    waiting_room: Arc<Mutex<(usize, VecDeque<usize>)>>,
+    customer_queue: Arc<Mutex<VecDeque<usize>>>,
     barber_ready: Arc<Semaphore>,
     is_running: Arc<AtomicBool>,
 ) {
@@ -71,9 +67,8 @@ fn customer(
         let sit;
 
         {
-            let (ref mut free_chair_number, ref mut customer_queue) = *waiting_room.lock().unwrap();
-            if *free_chair_number > 0 {
-                *free_chair_number -= 1;
+            let mut customer_queue = customer_queue.lock().unwrap();
+            if customer_queue.capacity() > customer_queue.len() {
                 customer_queue.push_back(index);
 
                 sit = true;
@@ -104,21 +99,13 @@ fn customer(
 
 fn barber(
     customer_ready: Arc<Semaphore>,
-    waiting_room: Arc<Mutex<(usize, VecDeque<usize>)>>,
+    customer_queue: Arc<Mutex<VecDeque<usize>>>,
     barber_ready: Arc<Semaphore>,
     is_running: Arc<AtomicBool>,
 ) {
-    while is_running.load(Ordering::Relaxed) || {
-        let customer_queue = &waiting_room.lock().unwrap().1;
-        !customer_queue.is_empty()
-    } {
+    while is_running.load(Ordering::Relaxed) || !customer_queue.lock().unwrap().is_empty() {
         while !customer_ready.acquire_timeout(Duration::from_millis(1000)) {
-            if !is_running.load(Ordering::Relaxed)
-                && !{
-                    let customer_queue = &waiting_room.lock().unwrap().1;
-                    !customer_queue.is_empty()
-                }
-            {
+            if !is_running.load(Ordering::Relaxed) && customer_queue.lock().unwrap().is_empty() {
                 return;
             }
         }
@@ -126,8 +113,7 @@ fn barber(
         let index;
 
         {
-            let (ref mut free_chair_number, ref mut customer_queue) = *waiting_room.lock().unwrap();
-            *free_chair_number += 1;
+            let mut customer_queue = customer_queue.lock().unwrap();
             index = customer_queue.pop_front().unwrap();
         }
 

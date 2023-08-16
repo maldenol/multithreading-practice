@@ -14,32 +14,34 @@ pub fn readers_writers_problem0() {
     let resource = Arc::new(Mutex::new(0));
     let is_running = Arc::new(AtomicBool::new(true));
 
+    println!("Spawning readers");
     let mut readers = Vec::with_capacity(READER_NUMBER);
     for _ in 0..READER_NUMBER {
         readers.push(thread::spawn({
             let resource = Arc::clone(&resource);
             let is_running = Arc::clone(&is_running);
-            || reader(resource, is_running)
+            move || reader(resource, is_running)
         }));
     }
-
+    println!("Spawning writers");
     let mut writers = Vec::with_capacity(WRITER_NUMBER);
     for _ in 0..READER_NUMBER {
         writers.push(thread::spawn({
             let resource = Arc::clone(&resource);
             let is_running = Arc::clone(&is_running);
-            || writer(resource, is_running)
+            move || writer(resource, is_running)
         }));
     }
 
     thread::sleep(Duration::from_millis(3000));
-
+    println!("Finishing threads");
     is_running.store(false, Ordering::Relaxed);
 
+    println!("Joining readers");
     for read in readers {
         let _ = read.join();
     }
-
+    println!("Joining writers");
     for writ in writers {
         let _ = writ.join();
     }

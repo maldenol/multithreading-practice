@@ -20,48 +20,51 @@ pub fn cigarette_smokers_problem() {
     let res3_sem = Arc::new(Semaphore::new(0));
     let is_running = Arc::new(AtomicBool::new(true));
 
+    println!("Spawning smokers");
     let mut smokers = Vec::new();
     smokers.push(thread::spawn({
         let agent_sem = Arc::clone(&agent_sem);
         let res_sems = (Arc::clone(&res2_sem), Arc::clone(&res3_sem));
         let res_names = (RES1_NAME, RES2_NAME, RES3_NAME);
         let is_running = Arc::clone(&is_running);
-        move || smoker_fn(agent_sem, res_sems, res_names, is_running)
+        move || smoker(agent_sem, res_sems, res_names, is_running)
     }));
     smokers.push(thread::spawn({
         let agent_sem = Arc::clone(&agent_sem);
         let res_sems = (Arc::clone(&res3_sem), Arc::clone(&res1_sem));
         let res_names = (RES2_NAME, RES3_NAME, RES1_NAME);
         let is_running = Arc::clone(&is_running);
-        move || smoker_fn(agent_sem, res_sems, res_names, is_running)
+        move || smoker(agent_sem, res_sems, res_names, is_running)
     }));
     smokers.push(thread::spawn({
         let agent_sem = Arc::clone(&agent_sem);
         let res_sems = (Arc::clone(&res1_sem), Arc::clone(&res2_sem));
         let res_names = (RES3_NAME, RES1_NAME, RES2_NAME);
         let is_running = Arc::clone(&is_running);
-        move || smoker_fn(agent_sem, res_sems, res_names, is_running)
+        move || smoker(agent_sem, res_sems, res_names, is_running)
     }));
-
+    println!("Spawning an agent");
     let agent = thread::spawn({
         let agent_sem = Arc::clone(&agent_sem);
         let res_sems = (res1_sem, res2_sem, res3_sem);
         let res_names = (RES1_NAME, RES2_NAME, RES3_NAME);
         let is_running = Arc::clone(&is_running);
-        move || agent_fn(agent_sem, res_sems, res_names, is_running)
+        move || agent(agent_sem, res_sems, res_names, is_running)
     });
 
-    thread::sleep(Duration::from_secs(3));
-
+    thread::sleep(Duration::from_millis(3000));
+    println!("Finishing threads");
     is_running.store(false, Ordering::Relaxed);
 
+    println!("Joining the agent");
     let _ = agent.join();
+    println!("Joining smokers");
     for smok in smokers {
         let _ = smok.join();
     }
 }
 
-fn smoker_fn(
+fn smoker(
     agent_sem: Arc<Semaphore>,
     res_sems: (Arc<Semaphore>, Arc<Semaphore>),
     res_names: (&str, &str, &str),
@@ -80,7 +83,11 @@ fn smoker_fn(
         // smoke(res_name);
 
         // Does work
-        res1_sem.acquire();
+        while !res1_sem.acquire_timeout(Duration::from_millis(1000)) {
+            if !is_running.load(Ordering::Relaxed) {
+                return;
+            }
+        }
         // println!("Smoker with {} has taken {} and is waiting for {}", res_name, res1_name, res2_name);
         if res2_sem.acquire_timeout(Duration::from_millis(0)) {
             // println!("Smoker with {} has taken {}", res_name, res2_name);
@@ -94,7 +101,7 @@ fn smoker_fn(
 }
 
 // Do not modify
-fn agent_fn(
+fn agent(
     agent_sem: Arc<Semaphore>,
     res_sems: (Arc<Semaphore>, Arc<Semaphore>, Arc<Semaphore>),
     res_names: (&str, &str, &str),
@@ -104,7 +111,7 @@ fn agent_fn(
     let (res1_name, res2_name, res3_name) = res_names;
 
     while is_running.load(Ordering::Relaxed) {
-        while !agent_sem.acquire_timeout(Duration::from_millis(50)) {
+        while !agent_sem.acquire_timeout(Duration::from_millis(1000)) {
             if !is_running.load(Ordering::Relaxed) {
                 return;
             }

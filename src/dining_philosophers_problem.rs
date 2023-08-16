@@ -25,6 +25,7 @@ pub fn dining_philosophers_problem() {
         both_forks_available.push(Semaphore::new(0));
     }
 
+    println!("Spawning philosophers");
     let mut philosophers = Vec::with_capacity(PHILOSOPHER_NUMBER);
     for index in 0..PHILOSOPHER_NUMBER {
         philosophers.push(thread::spawn({
@@ -44,10 +45,11 @@ pub fn dining_philosophers_problem() {
         }));
     }
 
-    thread::sleep(Duration::from_secs(3));
-
+    thread::sleep(Duration::from_millis(3000));
+    println!("Finishing threads");
     is_running.store(false, Ordering::Relaxed);
 
+    println!("Joining philosophers");
     for phil in philosophers {
         let _ = phil.join();
     }
