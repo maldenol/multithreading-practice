@@ -9,6 +9,7 @@ mod readers_writers_problem1;
 mod readers_writers_problem2;
 mod readers_writers_problem3;
 mod sleeping_barber_problem;
+mod thread_pool;
 
 mod semaphore;
 mod sync_rand;
@@ -22,6 +23,7 @@ use readers_writers_problem1::readers_writers_problem1;
 use readers_writers_problem2::readers_writers_problem2;
 use readers_writers_problem3::readers_writers_problem3;
 use sleeping_barber_problem::sleeping_barber_problem;
+use thread_pool::thread_pool;
 
 fn main() {
     //aba_problem();
@@ -33,4 +35,5 @@ fn main() {
     //readers_writers_problem2();
     //readers_writers_problem3();
     //sleeping_barber_problem();
+    //thread_pool();
 }
