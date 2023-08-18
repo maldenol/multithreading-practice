@@ -38,6 +38,16 @@ impl Semaphore {
         }
     }
 
+    pub fn try_acquire(&self) -> bool {
+        let mut count = self.lock.lock().unwrap();
+        if *count > 0 {
+            *count -= 1;
+            true
+        } else {
+            false
+        }
+    }
+
     pub fn release(&self) {
         *self.lock.lock().unwrap() += 1;
         self.cvar.notify_one();

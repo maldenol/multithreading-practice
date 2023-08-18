@@ -83,13 +83,13 @@ fn smoker(
         // smoke(res_name);
 
         // Does work
-        while !res1_sem.acquire_timeout(Duration::from_millis(1000)) {
+        while !res1_sem.acquire_timeout(Duration::from_millis(1)) {
             if !is_running.load(Ordering::Relaxed) {
                 return;
             }
         }
         // println!("Smoker with {} has taken {} and is waiting for {}", res_name, res1_name, res2_name);
-        if res2_sem.acquire_timeout(Duration::from_millis(0)) {
+        if res2_sem.try_acquire() {
             // println!("Smoker with {} has taken {}", res_name, res2_name);
             agent_sem.release();
             smoke(res_name);
